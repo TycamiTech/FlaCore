@@ -85,7 +85,7 @@
 
 ---
 
-## 📡 Tutorial Lengkap: Menghubungkan ke Server / Domain Anda
+##  Tutorial Lengkap: Menghubungkan ke Server / Domain Anda
 
 Aplikasi FlaCore dirancang agar **koneksi server bersifat netral dan modular**. Anda dapat menghubungkannya ke server FlaCore pribadi Anda, server VPS dengan domain HTTPS, atau server lokal (*Local Area Network* / LAN).
 
