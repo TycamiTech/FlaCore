@@ -1,7 +1,7 @@
 <div align="center">
 
-# FlaCore (Android) 🎵✨
-
+# FlaCore (Android)
+</div>
 <div align="center">
   <img src="images/logo.png" alt="FlaCore Logo" width="120" style="border-radius: 24px;" />
   <h3>Ultra-Clean Neumorphic Hi-Res Lossless Audio Streaming Client</h3>
