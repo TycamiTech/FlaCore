@@ -54,21 +54,21 @@
 
 ---
 
-## 🌟 Fitur Utama
+##  Fitur Utama
 
-- 💎 **Ultra-Clean Soft Neumorphic & Glassmorphic UI**: Palet warna monokromatis *Cool Soft Blue Porcelain* (`#F4F7FB`), bayangan difus ultra-halus, dan kartu kaca transparan.
-- 🚀 **Zero GPU Overhead**: Efek ambient blur menggunakan pre-baked low-overhead background texture tanpa shader blur dinamis yang berat, menjaga baterai tetap hemat dan HP tetap dingin.
-- 💽 **Arc Wheel Orbit Carousel**: Navigasi katalog lagu di halaman Explore dengan lintasan orbit melengkung. Lagu aktif secara otomatis masuk ke kapsul *stadium* dengan CD avatar berhologram.
-- 📻 **Vinyl Turntable Deck & Tonearm**: Tampilan pemutar piringan hitam vinyl berputar dengan alur cincin (*grooves*) dan lengan jarum (*tonearm*) analog yang bergerak saat memutar musik.
-- 🎙️ **Real-Time Synced Lyrics (LRCLIB)**: Lirik karaoke tersinkronisasi waktu (*timestamped*) dari LRCLIB API dengan efek transisi auto-scroll presisi dan *fade shader mask*.
-- 👥 **Deezer Public API Integration**: Foto profil artis resmi diambil secara dinamis dari Deezer API dengan sistem *in-memory cache* dan *local persistent storage* offline.
-- 📊 **Interactive Waveform Seekbar**: Bar gelombang frekuensi monokrom abu-abu yang responsif terhadap tap dan drag geser untuk melakukan seek audio secara akurat.
-- 🎧 **Hi-Res Lossless Audio Badge**: Deteksi otomatis bit-depth dan sample-rate audio (contoh: `Hi-Res Lossless • 24-bit / 96.0 kHz` atau `Lossless CD • 16-bit / 44.1 kHz`).
-- 📱 **Full Android Background Playback**: Berjalan lancar di latar belakang berkat `audio_service`, `just_audio`, serta integrasi `MediaSessionCompat` dan kontrol Android Lock Screen / Bluetooth AVRCP.
+-  **Ultra-Clean Soft Neumorphic & Glassmorphic UI**: Palet warna monokromatis *Cool Soft Blue Porcelain* (`#F4F7FB`), bayangan difus ultra-halus, dan kartu kaca transparan.
+-  **Zero GPU Overhead**: Efek ambient blur menggunakan pre-baked low-overhead background texture tanpa shader blur dinamis yang berat, menjaga baterai tetap hemat dan HP tetap dingin.
+-  **Arc Wheel Orbit Carousel**: Navigasi katalog lagu di halaman Explore dengan lintasan orbit melengkung. Lagu aktif secara otomatis masuk ke kapsul *stadium* dengan CD avatar berhologram.
+-  **Vinyl Turntable Deck & Tonearm**: Tampilan pemutar piringan hitam vinyl berputar dengan alur cincin (*grooves*) dan lengan jarum (*tonearm*) analog yang bergerak saat memutar musik.
+-  **Real-Time Synced Lyrics (LRCLIB)**: Lirik karaoke tersinkronisasi waktu (*timestamped*) dari LRCLIB API dengan efek transisi auto-scroll presisi dan *fade shader mask*.
+-  **Deezer Public API Integration**: Foto profil artis resmi diambil secara dinamis dari Deezer API dengan sistem *in-memory cache* dan *local persistent storage* offline.
+-  **Interactive Waveform Seekbar**: Bar gelombang frekuensi monokrom abu-abu yang responsif terhadap tap dan drag geser untuk melakukan seek audio secara akurat.
+-  **Hi-Res Lossless Audio Badge**: Deteksi otomatis bit-depth dan sample-rate audio (contoh: `Hi-Res Lossless • 24-bit / 96.0 kHz` atau `Lossless CD • 16-bit / 44.1 kHz`).
+-  **Full Android Background Playback**: Berjalan lancar di latar belakang berkat `audio_service`, `just_audio`, serta integrasi `MediaSessionCompat` dan kontrol Android Lock Screen / Bluetooth AVRCP.
 
 ---
 
-## 🏗️ Tech Stack & Dependencies
+##  Tech Stack & Dependencies
 
 - **Framework**: [Flutter](https://flutter.dev) (Dart SDK `^3.13.7`)
 - **State Management**: [Provider](https://pub.dev/packages/provider)
@@ -197,7 +197,7 @@ Tambahkan atribut `android:usesCleartextTraffic="true"` pada tag `<application>`
 
 ---
 
-## 🚀 Panduan Memulai (Setup & Installation)
+##  Panduan Memulai (Setup & Installation)
 
 ### Prasyarat
 1. [Flutter SDK](https://docs.flutter.dev/get-started/install) versi 3.13.7 atau lebih baru.
@@ -229,7 +229,7 @@ File APK siap instal akan berada di: `build/app/outputs/flutter-apk/app-release.
 
 ---
 
-## 📁 Struktur Direktori Project
+##  Struktur Direktori Project
 
 ```text
 FlaCore-App/
@@ -255,14 +255,14 @@ FlaCore-App/
 
 ---
 
-## 🔒 Privasi & Keamanan
+##  Privasi & Keamanan
 - Aplikasi ini **tidak mengumpulkan atau melacak data pribadi pengguna**.
 - Fitur pencarian foto profil artis menggunakan Deezer Public API yang tidak memerlukan kredensial login atau token berbayar.
 - Fitur lirik lagu menggunakan LRCLIB API publik dengan transmisi data anonim.
 
 ---
 
-## 🤝 Berkontribusi
+##  Berkontribusi
 Kontribusi, perbaikan bug, dan penambahan fitur selalu disambut baik!
 1. Fork repository ini.
 2. Buat branch fitur baru (`git checkout -b feature/NamaFitur`).
