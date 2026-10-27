@@ -5,10 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service responsible for fetching artist profile pictures using Deezer Public API
-/// with persistent local caching via SharedPreferences and fast in-memory cache.
+/// with global fan count / popularity prioritization, persistent local caching via SharedPreferences,
+/// and fast in-memory cache.
 class ArtistImageService {
   final http.Client _client;
-  static const String _cachePrefix = 'artist_image_url_';
+  static const String _cachePrefix = 'artist_img_v3_';
 
   // In-memory cache to avoid repeated disk reads during the same session
   static final Map<String, String> _memoryCache = {};
@@ -30,8 +31,13 @@ class ArtistImageService {
   ///
   /// Checks local cache (`SharedPreferences` and memory) first.
   /// If not found in cache, sends a GET request to:
-  /// `https://api.deezer.com/search/artist?q=${Uri.encodeComponent(artistName)}&limit=1`
-  /// and extracts `picture_medium` (or `picture_big`) from the first data item.
+  /// `https://api.deezer.com/search/artist?q=${Uri.encodeComponent(artistName.trim())}&limit=15`
+  ///
+  /// Selection Logic:
+  /// 1. Normalizes string comparison by removing spaces and ignoring case.
+  /// 2. Collects all candidates matching or containing the searched artist name.
+  /// 3. Sorts all candidate matches strictly by `nb_fan` (fan count) descending.
+  /// 4. Extracts `picture_big` (fallback to `picture_medium`) from the top ranked candidate.
   ///
   /// Caches the resulting URL in `SharedPreferences` and returns it.
   /// Wrapped with try-catch to return `null` on network errors, timeouts, or empty results.
@@ -71,9 +77,9 @@ class ArtistImageService {
         return cachedUrl;
       }
 
-      // 2. Fetch from Deezer Public API
+      // 2. Fetch up to 15 results from Deezer Public API
       final uri = Uri.parse(
-        'https://api.deezer.com/search/artist?q=${Uri.encodeComponent(artistName)}&limit=1',
+        'https://api.deezer.com/search/artist?q=${Uri.encodeComponent(artistName.trim())}&limit=15',
       );
 
       final response = await _client.get(
@@ -84,22 +90,50 @@ class ArtistImageService {
       ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        final dynamic decoded = jsonDecode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final dynamic decoded = jsonDecode(decodedBody);
         if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-          final data = decoded['data'] as List;
-          if (data.isNotEmpty) {
-            final firstArtist = data.first;
-            if (firstArtist is Map<String, dynamic>) {
-              final dynamic medium = firstArtist['picture_medium'];
-              final dynamic big = firstArtist['picture_big'];
-              final imageUrl = (medium ?? big) as String?;
+          final rawList = decoded['data'] as List;
+          final candidates = rawList.whereType<Map<String, dynamic>>().toList();
 
-              if (imageUrl != null && imageUrl.isNotEmpty) {
-                // Save to local cache
-                await prefs.setString(cacheKey, imageUrl);
-                _memoryCache[cacheKey] = imageUrl;
-                return imageUrl;
-              }
+          if (candidates.isNotEmpty) {
+            final normalizedTarget =
+                artistName.replaceAll(' ', '').toLowerCase();
+
+            // Collect all candidates matching or containing the searched artist name
+            final matchingCandidates = candidates.where((candidate) {
+              final candidateName = candidate['name']
+                      ?.toString()
+                      .replaceAll(' ', '')
+                      .toLowerCase() ??
+                  '';
+              return candidateName.isNotEmpty &&
+                  (candidateName.contains(normalizedTarget) ||
+                      normalizedTarget.contains(candidateName));
+            }).toList();
+
+            final targetCandidates = matchingCandidates.isNotEmpty
+                ? matchingCandidates
+                : candidates;
+
+            // Sort purely by highest number of fans (nb_fan) descending
+            targetCandidates.sort((a, b) {
+              final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
+              final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
+              return fansB.compareTo(fansA);
+            });
+
+            final selectedCandidate = targetCandidates.first;
+
+            final dynamic big = selectedCandidate['picture_big'];
+            final dynamic medium = selectedCandidate['picture_medium'];
+            final imageUrl = (big ?? medium) as String?;
+
+            if (imageUrl != null && imageUrl.isNotEmpty) {
+              // Save to local cache
+              await prefs.setString(cacheKey, imageUrl);
+              _memoryCache[cacheKey] = imageUrl;
+              return imageUrl;
             }
           }
         }

@@ -508,7 +508,7 @@ void main() {
 
     test('returns cached URL from SharedPreferences without network request', () async {
       SharedPreferences.setMockInitialValues({
-        'artist_image_url_daft punk': 'https://cached.deezer.com/daftpunk.jpg',
+        'artist_img_v3_daft punk': 'https://cached.deezer.com/daftpunk.jpg',
       });
 
       var requestMade = false;
@@ -524,13 +524,14 @@ void main() {
       expect(requestMade, isFalse);
     });
 
-    test('fetches from Deezer API, caches result, and returns picture_medium', () async {
+    test('fetches from Deezer API, caches result, and returns picture_big or picture_medium', () async {
       SharedPreferences.setMockInitialValues({});
 
       final mockClient = MockClient((request) async {
         expect(request.url.host, 'api.deezer.com');
         expect(request.url.path, '/search/artist');
         expect(request.url.queryParameters['q'], 'IU');
+        expect(request.url.queryParameters['limit'], '15');
 
         return http.Response(
           jsonEncode({
@@ -538,6 +539,7 @@ void main() {
               {
                 'id': 12345,
                 'name': 'IU',
+                'nb_fan': 1500000,
                 'picture_medium': 'https://e-cdns-images.dzcdn.net/medium.jpg',
                 'picture_big': 'https://e-cdns-images.dzcdn.net/big.jpg',
               }
@@ -551,11 +553,134 @@ void main() {
       final service = ArtistImageService(client: mockClient);
       final url = await service.getArtistImageUrl('IU');
 
-      expect(url, 'https://e-cdns-images.dzcdn.net/medium.jpg');
+      expect(url, 'https://e-cdns-images.dzcdn.net/big.jpg');
 
-      // Verify SharedPreferences cache was written
+      // Verify SharedPreferences cache was written with v3 prefix
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('artist_image_url_iu'), 'https://e-cdns-images.dzcdn.net/medium.jpg');
+      expect(prefs.getString('artist_img_v3_iu'), 'https://e-cdns-images.dzcdn.net/big.jpg');
+    });
+
+    test('prioritizes official artist with highest fan count when normalized names match (Jung Kook case)', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final mockClient = MockClient((request) async {
+        expect(request.url.queryParameters['q'], 'Jung Kook');
+        expect(request.url.queryParameters['limit'], '15');
+
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'id': 101,
+                'name': 'Jung Kook',
+                'nb_fan': 7511,
+                'picture_big': 'https://e-cdns-images.dzcdn.net/jungkook_low.jpg',
+              },
+              {
+                'id': 102,
+                'name': 'Jungkook',
+                'nb_fan': 474240,
+                'picture_big': 'https://e-cdns-images.dzcdn.net/jungkook_official.jpg',
+              },
+              {
+                'id': 103,
+                'name': 'Jung Kook Cover Band',
+                'nb_fan': 42,
+                'picture_big': 'https://e-cdns-images.dzcdn.net/cover.jpg',
+              },
+            ],
+            'total': 3,
+          }),
+          200,
+        );
+      });
+
+      final service = ArtistImageService(client: mockClient);
+      final url = await service.getArtistImageUrl('Jung Kook');
+
+      // Must select the official profile with 474,240 fans despite spacing variation
+      expect(url, 'https://e-cdns-images.dzcdn.net/jungkook_official.jpg');
+    });
+
+    test('selects exact name match with highest nb_fan over obscure artist or partial match', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final mockClient = MockClient((request) async {
+        expect(request.url.queryParameters['q'], 'BTS');
+        expect(request.url.queryParameters['limit'], '15');
+
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'id': 101,
+                'name': 'BTS Official Club',
+                'nb_fan': 50000,
+                'picture_medium': 'https://e-cdns-images.dzcdn.net/bts_club.jpg',
+              },
+              {
+                'id': 102,
+                'name': 'BTS',
+                'nb_fan': 12,
+                'picture_medium': 'https://e-cdns-images.dzcdn.net/bts_obscure.jpg',
+              },
+              {
+                'id': 103,
+                'name': 'bts',
+                'nb_fan': 4500000,
+                'picture_medium': 'https://e-cdns-images.dzcdn.net/bts_real.jpg',
+              },
+              {
+                'id': 104,
+                'name': 'BTS Band',
+                'nb_fan': 200,
+                'picture_medium': 'https://e-cdns-images.dzcdn.net/bts_band.jpg',
+              },
+            ],
+            'total': 4,
+          }),
+          200,
+        );
+      });
+
+      final service = ArtistImageService(client: mockClient);
+      final url = await service.getArtistImageUrl('BTS');
+
+      // Should choose the match with highest nb_fan (4,500,000)
+      expect(url, 'https://e-cdns-images.dzcdn.net/bts_real.jpg');
+    });
+
+    test('selects candidate with highest nb_fan when no exact match exists', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'id': 201,
+                'name': 'Zico Chain',
+                'nb_fan': 150,
+                'picture_medium': 'https://e-cdns-images.dzcdn.net/zico_small.jpg',
+              },
+              {
+                'id': 202,
+                'name': 'ZICO (지코)',
+                'nb_fan': 890000,
+                'picture_medium': 'https://e-cdns-images.dzcdn.net/zico_popular.jpg',
+              },
+            ],
+            'total': 2,
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final service = ArtistImageService(client: mockClient);
+      final url = await service.getArtistImageUrl('ZICO (Block B)');
+
+      expect(url, 'https://e-cdns-images.dzcdn.net/zico_popular.jpg');
     });
 
     test('returns null when Deezer artist data is empty', () async {
