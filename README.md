@@ -1,3 +1,5 @@
+<div align="center">
+
 # FlaCore (Android) 🎵✨
 
 <div align="center">
