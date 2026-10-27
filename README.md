@@ -16,6 +16,42 @@
 
 ---
 
+## 📸 Tampilan Aplikasi (Interface Showcase)
+
+<div align="center">
+  <table>
+    <tr>
+      <th align="center"><b>1. Brand Identity & Onboarding</b></th>
+      <th align="center"><b>2. Explore & Artists Catalog</b></th>
+      <th align="center"><b>3. Now Playing & Synced Lyrics</b></th>
+    </tr>
+    <tr>
+      <td align="center" width="33%">
+        <img src="images/1.jpg" alt="FlaCore Onboarding Screen" style="border-radius: 14px; max-width: 100%;" />
+      </td>
+      <td align="center" width="33%">
+        <img src="images/2.jpg" alt="FlaCore Explore & Artists Catalog" style="border-radius: 14px; max-width: 100%;" />
+      </td>
+      <td align="center" width="33%">
+        <img src="images/3.jpg" alt="FlaCore Now Playing & Synced Lyrics" style="border-radius: 14px; max-width: 100%;" />
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="top">
+        <sub><b>Onboarding Interaktif</b><br/>Kartu frosted glassmorphism, tipografi tebal <em>"New Age Of Music"</em>, dan ilustrasi fisik CD & kaset.</sub>
+      </td>
+      <td align="center" valign="top">
+        <sub><b>Katalog & Navigasi</b><br/><em>Arc Wheel Orbit Carousel</em> dengan CD berhologram & grid 2 kolom artis dengan foto Deezer API.</sub>
+      </td>
+      <td align="center" valign="top">
+        <sub><b>Playback Engine</b><br/>Vinyl Turntable berputar dengan tonearm jarum analog, lirik karaoke auto-scroll, & waveform seekbar.</sub>
+      </td>
+    </tr>
+  </table>
+</div>
+
+---
+
 ## 🌟 Fitur Utama
 
 - 💎 **Ultra-Clean Soft Neumorphic & Glassmorphic UI**: Palet warna monokromatis *Cool Soft Blue Porcelain* (`#F4F7FB`), bayangan difus ultra-halus, dan kartu kaca transparan.
