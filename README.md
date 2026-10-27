@@ -18,7 +18,7 @@
 
 ---
 
-## 📸 Tampilan Aplikasi (Interface Showcase)
+##  Tampilan Aplikasi (Interface Showcase)
 
 <div align="center">
   <table>
