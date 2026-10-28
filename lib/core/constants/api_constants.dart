@@ -2,39 +2,48 @@
 class ApiConstants {
   ApiConstants._();
 
-  /// Base server URL for FlaCore API.
-  ///
-  /// ⚠️ PENTING / IMPORTANT:
-  /// Ganti nilai ini dengan URL domain atau IP server FlaCore Anda sendiri.
-  /// Contoh:
-  /// - Domain Publik: 'https://flacore.yourdomain.com'
-  /// - IP Jaringan Lokal: 'http://192.168.1.100:3000'
-  ///
-  /// Catatan:
-  /// - JANGAN tambahkan tanda garis miring (trailing slash '/') di akhir URL.
-  /// - Bisa juga ditentukan saat build menggunakan argumen:
-  ///   `--dart-define=FLACORE_BASE_URL=https://your-server.com`
-  static const String baseUrl = String.fromEnvironment(
-    'FLACORE_BASE_URL',
-    defaultValue: 'https://your-flacore-server.example.com',
-  );
+  /// Default fallback server URL (empty on fresh install)
+  static const String defaultBaseUrl = '';
+
+  /// Active base server URL for FlaCore API
+  static String _baseUrl = defaultBaseUrl;
+
+  /// Whether the user has actively configured a custom server URL
+  static bool isCustomConfigured = false;
+
+  /// Gets the currently active base server URL
+  static String get baseUrl => _baseUrl;
+
+  /// Sets the active base server URL dynamically.
+  /// Automatically strips trailing slashes and ensures standard protocol (http:// or https://).
+  static void setBaseUrl(String url) {
+    var cleanUrl = url.trim();
+    while (cleanUrl.endsWith('/')) {
+      cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+    }
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = 'https://$cleanUrl';
+    }
+    _baseUrl = cleanUrl;
+    isCustomConfigured = true;
+  }
 
   /// Endpoint to fetch all songs
-  static const String songsEndpoint = '$baseUrl/api/songs';
+  static String get songsEndpoint => '$_baseUrl/api/songs';
 
   /// Endpoint to trigger library scan
-  static const String scanEndpoint = '$baseUrl/api/scan';
+  static String get scanEndpoint => '$_baseUrl/api/scan';
 
   /// Generates the direct audio streaming URL for a specific song [id]
-  static String streamUrl(String id) => '$baseUrl/api/stream/$id';
+  static String streamUrl(String id) => '$_baseUrl/api/stream/$id';
 
   /// Generates the album cover art URL for a specific song [id]
-  static String coverUrl(String id) => '$baseUrl/api/songs/$id/cover';
+  static String coverUrl(String id) => '$_baseUrl/api/songs/$id/cover';
 }
 
 // Top-level aliases for direct imports if preferred
-const String baseUrl = ApiConstants.baseUrl;
-const String songsEndpoint = ApiConstants.songsEndpoint;
-const String scanEndpoint = ApiConstants.scanEndpoint;
+String get baseUrl => ApiConstants.baseUrl;
+String get songsEndpoint => ApiConstants.songsEndpoint;
+String get scanEndpoint => ApiConstants.scanEndpoint;
 String streamUrl(String id) => ApiConstants.streamUrl(id);
 String coverUrl(String id) => ApiConstants.coverUrl(id);

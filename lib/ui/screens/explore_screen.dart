@@ -2,11 +2,13 @@ import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/song_model.dart';
 import '../../providers/library_provider.dart';
 import '../../providers/player_provider.dart';
+import '../widgets/server_config_dialog.dart';
 import 'now_playing_screen.dart';
 
 /// Explore Screen featuring the Ultra-Clean Arc Wheel Carousel.
@@ -47,10 +49,36 @@ class _ExploreScreenState extends State<ExploreScreen>
         }
       });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final savedServer = prefs.getString('server_api_url');
+
+      if (!mounted) return;
+
+      // 1. First time launch or server not configured: show non-dismissible popup
+      if (savedServer == null || savedServer.isEmpty) {
+        final connected =
+            await showServerConfigDialog(context, isDismissible: false);
+        if (connected == true && mounted) {
+          context.read<LibraryProvider>().loadSongs();
+        }
+        return;
+      }
+
+      // 2. Normal load
       final library = context.read<LibraryProvider>();
       if (library.allSongs.isEmpty && !library.isLoading) {
-        library.loadSongs();
+        await library.loadSongs();
+        // 3. If server is offline / error: prompt server config
+        if (mounted &&
+            library.errorMessage != null &&
+            library.allSongs.isEmpty) {
+          final connected =
+              await showServerConfigDialog(context, isDismissible: true);
+          if (connected == true && mounted) {
+            library.loadSongs();
+          }
+        }
       }
     });
   }
@@ -164,7 +192,20 @@ class _ExploreScreenState extends State<ExploreScreen>
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
-                              onPressed: () => library.loadSongs(),
+                              onPressed: () async {
+                                await library.loadSongs();
+                                if (context.mounted &&
+                                    library.errorMessage != null &&
+                                    library.allSongs.isEmpty) {
+                                  final connected = await showServerConfigDialog(
+                                    context,
+                                    isDismissible: true,
+                                  );
+                                  if (connected == true && context.mounted) {
+                                    library.loadSongs();
+                                  }
+                                }
+                              },
                               icon: const Icon(Icons.refresh_rounded),
                               label: const Text('Reload Catalog'),
                             ),

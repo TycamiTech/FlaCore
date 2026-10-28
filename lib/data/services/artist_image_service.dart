@@ -5,11 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service responsible for fetching artist profile pictures using Deezer Public API
-/// with global fan count / popularity prioritization, persistent local caching via SharedPreferences,
-/// and fast in-memory cache.
+/// with exact normalized string matching and fan count prioritization,
+/// persistent local caching via SharedPreferences, and fast in-memory cache.
 class ArtistImageService {
   final http.Client _client;
-  static const String _cachePrefix = 'artist_img_v3_';
+  static const String _cachePrefix = 'artist_img_v4_';
 
   // In-memory cache to avoid repeated disk reads during the same session
   static final Map<String, String> _memoryCache = {};
@@ -27,25 +27,35 @@ class ArtistImageService {
     _inFlightRequests.clear();
   }
 
+  /// Helper to normalize artist names by removing spaces, dashes, underscores, and dots,
+  /// as well as converting to lowercase.
+  static String _cleanName(String str) {
+    return str
+        .toLowerCase()
+        .replaceAll(RegExp(r'[\s\-_\.]+'), '')
+        .trim();
+  }
+
   /// Fetches the official profile picture URL for [artistName].
   ///
-  /// Checks local cache (`SharedPreferences` and memory) first.
+  /// Checks local cache (`SharedPreferences` and memory) first using `artist_img_v4_${targetClean}`.
   /// If not found in cache, sends a GET request to:
   /// `https://api.deezer.com/search/artist?q=${Uri.encodeComponent(artistName.trim())}&limit=15`
   ///
   /// Selection Logic:
-  /// 1. Normalizes string comparison by removing spaces and ignoring case.
-  /// 2. Collects all candidates matching or containing the searched artist name.
-  /// 3. Sorts all candidate matches strictly by `nb_fan` (fan count) descending.
-  /// 4. Extracts `picture_big` (fallback to `picture_medium`) from the top ranked candidate.
+  /// 1. Cleans target name: `_cleanName(artistName)`.
+  /// 2. Filters `data` strictly for candidates where `_cleanName(candidate['name']) == targetClean`.
+  /// 3. If exact matches exist: sorts them by `nb_fan` descending and takes the top candidate.
+  /// 4. If no exact match exists: falls back to sorting all candidates by `nb_fan` descending.
+  /// 5. Extracts `picture_big` (fallback to `picture_medium`).
   ///
   /// Caches the resulting URL in `SharedPreferences` and returns it.
   /// Wrapped with try-catch to return `null` on network errors, timeouts, or empty results.
   Future<String?> getArtistImageUrl(String artistName) async {
-    final cleanName = artistName.trim();
-    if (cleanName.isEmpty) return null;
+    final targetClean = _cleanName(artistName);
+    if (targetClean.isEmpty) return null;
 
-    final cacheKey = '$_cachePrefix${cleanName.toLowerCase()}';
+    final cacheKey = '$_cachePrefix$targetClean';
 
     // 1. Instant check in memory cache
     if (_memoryCache.containsKey(cacheKey)) {
@@ -57,7 +67,7 @@ class ArtistImageService {
       return await _inFlightRequests[cacheKey];
     }
 
-    final future = _fetchAndCache(cacheKey, cleanName);
+    final future = _fetchAndCache(cacheKey, artistName.trim(), targetClean);
     _inFlightRequests[cacheKey] = future;
 
     try {
@@ -67,7 +77,11 @@ class ArtistImageService {
     }
   }
 
-  Future<String?> _fetchAndCache(String cacheKey, String artistName) async {
+  Future<String?> _fetchAndCache(
+    String cacheKey,
+    String queryArtistName,
+    String targetClean,
+  ) async {
     try {
       // 1. Check local SharedPreferences cache
       final prefs = await SharedPreferences.getInstance();
@@ -79,7 +93,7 @@ class ArtistImageService {
 
       // 2. Fetch up to 15 results from Deezer Public API
       final uri = Uri.parse(
-        'https://api.deezer.com/search/artist?q=${Uri.encodeComponent(artistName.trim())}&limit=15',
+        'https://api.deezer.com/search/artist?q=${Uri.encodeComponent(queryArtistName)}&limit=15',
       );
 
       final response = await _client.get(
@@ -97,33 +111,32 @@ class ArtistImageService {
           final candidates = rawList.whereType<Map<String, dynamic>>().toList();
 
           if (candidates.isNotEmpty) {
-            final normalizedTarget =
-                artistName.replaceAll(' ', '').toLowerCase();
-
-            // Collect all candidates matching or containing the searched artist name
-            final matchingCandidates = candidates.where((candidate) {
-              final candidateName = candidate['name']
-                      ?.toString()
-                      .replaceAll(' ', '')
-                      .toLowerCase() ??
-                  '';
-              return candidateName.isNotEmpty &&
-                  (candidateName.contains(normalizedTarget) ||
-                      normalizedTarget.contains(candidateName));
+            // Filter strictly for exact normalized matches (NO .contains())
+            final exactCandidates = candidates.where((candidate) {
+              final candidateClean =
+                  _cleanName(candidate['name']?.toString() ?? '');
+              return candidateClean == targetClean;
             }).toList();
 
-            final targetCandidates = matchingCandidates.isNotEmpty
-                ? matchingCandidates
-                : candidates;
+            final Map<String, dynamic> selectedCandidate;
 
-            // Sort purely by highest number of fans (nb_fan) descending
-            targetCandidates.sort((a, b) {
-              final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
-              final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
-              return fansB.compareTo(fansA);
-            });
-
-            final selectedCandidate = targetCandidates.first;
+            if (exactCandidates.isNotEmpty) {
+              // Sort exact matches by number of fans (nb_fan) descending
+              exactCandidates.sort((a, b) {
+                final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
+                final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
+                return fansB.compareTo(fansA);
+              });
+              selectedCandidate = exactCandidates.first;
+            } else {
+              // If no exact match exists, fall back to sorting all candidates by nb_fan descending
+              candidates.sort((a, b) {
+                final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
+                final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
+                return fansB.compareTo(fansA);
+              });
+              selectedCandidate = candidates.first;
+            }
 
             final dynamic big = selectedCandidate['picture_big'];
             final dynamic medium = selectedCandidate['picture_medium'];

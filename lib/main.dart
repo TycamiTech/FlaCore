@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/constants/api_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/flacore_audio_handler.dart';
 import 'providers/library_provider.dart';
@@ -39,6 +40,10 @@ Future<void> main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
+  final savedServerUrl = prefs.getString('server_api_url');
+  if (savedServerUrl != null && savedServerUrl.isNotEmpty) {
+    ApiConstants.setBaseUrl(savedServerUrl);
+  }
   final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
   runApp(FlaCoreApp(hasSeenOnboarding: hasSeenOnboarding));

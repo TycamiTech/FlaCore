@@ -37,7 +37,9 @@ void main() {
 
   testWidgets('OnboardingScreen Get Started saves preference',
       (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'server_api_url': 'https://flacore.example.com',
+    });
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -88,6 +90,10 @@ void main() {
   });
 
   group('Song Model tests', () {
+    setUp(() {
+      ApiConstants.setBaseUrl('https://flacore.example.com');
+    });
+
     test('Song.fromJson parses all fields and computed properties properly', () {
       final json = {
         'id': 'test-uuid-1',
@@ -169,7 +175,7 @@ void main() {
       ];
 
       final mockClient = MockClient((request) async {
-        expect(request.url, Uri.parse(ApiConstants.songsEndpoint));
+        expect(request.url.toString(), ApiConstants.songsEndpoint);
         return http.Response(jsonEncode(mockData), 200, headers: {
           'content-type': 'application/json; charset=utf-8',
         });
@@ -185,7 +191,7 @@ void main() {
 
     test('triggerScan returns true on 200/202', () async {
       final mockClient = MockClient((request) async {
-        expect(request.url, Uri.parse(ApiConstants.scanEndpoint));
+        expect(request.url.toString(), ApiConstants.scanEndpoint);
         return http.Response(
           jsonEncode({'status': 'scan initiated'}),
           200,
@@ -508,7 +514,7 @@ void main() {
 
     test('returns cached URL from SharedPreferences without network request', () async {
       SharedPreferences.setMockInitialValues({
-        'artist_img_v3_daft punk': 'https://cached.deezer.com/daftpunk.jpg',
+        'artist_img_v4_daftpunk': 'https://cached.deezer.com/daftpunk.jpg',
       });
 
       var requestMade = false;
@@ -555,9 +561,44 @@ void main() {
 
       expect(url, 'https://e-cdns-images.dzcdn.net/big.jpg');
 
-      // Verify SharedPreferences cache was written with v3 prefix
+      // Verify SharedPreferences cache was written with v4 prefix and clean name
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('artist_img_v3_iu'), 'https://e-cdns-images.dzcdn.net/big.jpg');
+      expect(prefs.getString('artist_img_v4_iu'), 'https://e-cdns-images.dzcdn.net/big.jpg');
+    });
+
+    test('does NOT match partial name substring (IVE vs Ivete Sangalo case)', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final mockClient = MockClient((request) async {
+        expect(request.url.queryParameters['q'], 'IVE');
+
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'id': 999,
+                'name': 'Ivete Sangalo',
+                'nb_fan': 2200000, // Massive fan count, but NOT an exact normalized match
+                'picture_big': 'https://e-cdns-images.dzcdn.net/ivete.jpg',
+              },
+              {
+                'id': 888,
+                'name': 'IVE',
+                'nb_fan': 350000,
+                'picture_big': 'https://e-cdns-images.dzcdn.net/ive_official.jpg',
+              },
+            ],
+            'total': 2,
+          }),
+          200,
+        );
+      });
+
+      final service = ArtistImageService(client: mockClient);
+      final url = await service.getArtistImageUrl('IVE');
+
+      // Must strictly pick IVE, never Ivete Sangalo
+      expect(url, 'https://e-cdns-images.dzcdn.net/ive_official.jpg');
     });
 
     test('prioritizes official artist with highest fan count when normalized names match (Jung Kook case)', () async {

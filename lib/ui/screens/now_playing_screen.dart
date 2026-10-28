@@ -91,36 +91,44 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             children: [
               // 1. Top Minimalist AppBar
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _NeumorphicIconButton(
                     icon: Icons.keyboard_arrow_down_rounded,
                     size: 44,
                     onTap: () => Navigator.of(context).pop(),
                   ),
-                  Column(
-                    children: [
-                      Text(
-                        'NOW PLAYING',
-                        style: TextStyle(
-                          fontSize: 11,
-                          letterSpacing: 2.2,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.textSecondary.withValues(alpha: 0.9),
-                        ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'NOW PLAYING',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              letterSpacing: 2.2,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textSecondary.withValues(alpha: 0.9),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            song.album.isNotEmpty ? song.album : 'FlaCore Hi-Res Deck',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                              height: 1.25,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        song.album.isNotEmpty ? song.album : 'FlaCore Hi-Res Deck',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(width: 44, height: 44),
                 ],
